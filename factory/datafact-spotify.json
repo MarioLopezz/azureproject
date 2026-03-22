@@ -1,0 +1,9 @@
+{
+	"name": "datafact-spotify",
+	"location": "spaincentral",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "5197113f-edc9-4224-9cf5-e127756e5a29",
+		"tenantId": "874e4d36-c767-4ac8-bb52-3a72b2249aca"
+	}
+}
