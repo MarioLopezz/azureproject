@@ -116,7 +116,7 @@
 				]
 			},
 			{
-				"name": "If Condition1",
+				"name": "if",
 				"type": "IfCondition",
 				"dependsOn": [
 					{
@@ -167,9 +167,16 @@
 					],
 					"ifTrueActivities": [
 						{
-							"name": "Copy data2",
+							"name": "update_last_cdc",
 							"type": "Copy",
-							"dependsOn": [],
+							"dependsOn": [
+								{
+									"activity": "get_max_cdc",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
 							"policy": {
 								"timeout": "0.12:00:00",
 								"retry": 0,
@@ -180,13 +187,24 @@
 							"userProperties": [],
 							"typeProperties": {
 								"source": {
-									"type": "AzureSqlSource",
-									"sqlReaderQuery": {
-										"value": "select max(@{pipeline().parameters.cdc_col}) from @{pipeline().parameters.schema}.@{pipeline().parameters.table}",
-										"type": "Expression"
+									"type": "JsonSource",
+									"additionalColumns": [
+										{
+											"name": "cdc",
+											"value": {
+												"value": "@activity('Copy data1').output",
+												"type": "Expression"
+											}
+										}
+									],
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"enablePartitionDiscovery": false
 									},
-									"queryTimeout": "02:00:00",
-									"partitionOption": "None"
+									"formatSettings": {
+										"type": "JsonReadSettings"
+									}
 								},
 								"sink": {
 									"type": "JsonSink",
@@ -201,8 +219,13 @@
 							},
 							"inputs": [
 								{
-									"referenceName": "AzureSqlTable1",
-									"type": "DatasetReference"
+									"referenceName": "json_dynamic",
+									"type": "DatasetReference",
+									"parameters": {
+										"container": "bronze",
+										"folder": "cdc",
+										"file": "empyt.json"
+									}
 								}
 							],
 							"outputs": [
@@ -216,6 +239,35 @@
 									}
 								}
 							]
+						},
+						{
+							"name": "get_max_cdc",
+							"type": "Script",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "AzureSqlDatabase1",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "select max(@{pipeline().parameters.cdc_col}) as cdc from @{pipeline().parameters.schema}.@{pipeline().parameters.table}",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
 						}
 					]
 				}
